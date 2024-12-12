@@ -1,0 +1,421 @@
+---
+title: "Reproducible Figures and Science Communication Assignment "
+output:
+  html_document: default
+  pdf_document: default
+date: "2023-10-09"
+---
+
+```{r Loading Packages, echo=FALSE, include=FALSE}
+
+library(palmerpenguins)
+library(tidyverse)
+library(ggplot2)
+library(here)
+library(janitor)
+library(patchwork)
+library(ragg)
+library(svglite)
+library(dplyr)
+library(interactions)
+library(renv)
+
+source(here("functions", "cleaning.R"))
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+*The following is a template .rmd RMarkdown file for you to use for your homework submission.*
+
+*Please Knit your .rmd to a PDF format or HTML and submit that with no identifiers like your name.*
+
+*To create a PDF, first install tinytex and load the package. Then press the Knit arrow and select "Knit to PDF".*
+
+## QUESTION 01: Data Visualisation for Science Communication
+
+*Create a figure using the Palmer Penguin dataset that is correct but badly communicates the data. **Do not make a boxplot**.*
+
+*Use the following references to guide you:*
+
+-   [*https://www.nature.com/articles/533452a*](https://www.nature.com/articles/533452a){.uri}
+-   [*https://elifesciences.org/articles/16800*](https://elifesciences.org/articles/16800){.uri}
+
+*Note: Focus on visual elements rather than writing misleading text on it.*
+
+### a) Provide your figure here:
+
+```{r bad figure code, echo=FALSE, include=FALSE, warning=FALSE, message=FALSE}
+
+# Data Prep - mostly for Q2 onwards, repeated there again as part of workflow
+write.csv(penguins_raw,here("dataset","penguins_raw.csv"))
+
+data_raw <- read.csv(here("dataset","penguins_raw.csv"))
+
+head(data_raw)
+colnames(data_raw)
+
+cleaned_data <- clean_column_names(data_raw)
+
+write.csv(cleaned_data,here("dataset","data_clean.csv"))
+
+data_clean <- read.csv(here("dataset","data_clean.csv"))
+
+head(data_clean)
+colnames(data_clean)
+
+
+# Bad Figure 
+# Create the ggplot object
+poor_graph_png <- ggplot(data_clean) +
+  geom_col(aes(x = flipper_length_mm,
+               y = body_mass_g, fill=island)) +
+  scale_fill_manual(values = c("lightgreen", "green", "red"))
+
+# Save the plot using ragg::agg_png
+agg_png("figures/poor_graph.png",
+        width = 3000,
+        height = 3000,
+        units = "px",
+        res = 1000,
+        scaling = 0.5)
+
+
+print(poor_graph_png)
+
+dev.off()
+
+print(poor_graph_png)
+
+```
+
+```{r Providing bad graph, echo=FALSE,warning=FALSE, message=FALSE}
+print(poor_graph_png)
+```
+
+### b) Write about how your design choices mislead the reader about the underlying data (200-300 words).
+
+*Include references.*
+
+-   colour blind, similar colours
+-   confusing labels
+-   bad scale
+-   doing it by island makes it look like island has effect when really it is species
+-   how to save graph properly?
+-   better to plot other way around?
+-   scatter plot better
+
+------------------------------------------------------------------------
+
+## QUESTION 2: Data Pipeline
+
+*Write a data analysis pipeline in your .rmd RMarkdown file. You should be aiming to write a clear explanation of the steps, the figures visible, as well as clear code.*
+
+*Your code should include the steps practiced in the lab session:*
+
+-   *Load the data*
+
+-   *Appropriately clean the data*
+
+-   *Create an Exploratory Figure (**not a boxplot**)*
+
+-   *Save the figure*
+
+-   ***New**: Run a statistical test*
+
+-   ***New**: Create a Results Figure*
+
+-   *Save the figure*
+
+*An exploratory figure shows raw data, such as the distribution of the data. A results figure demonstrates the stats method chosen, and includes the results of the stats test.*
+
+*Between your code, communicate clearly what you are doing and why.*
+
+*Your text should include:*
+
+-   *Introduction*
+
+-   *Hypothesis*
+
+-   *Stats Method*
+
+-   *Results*
+
+-   *Discussion*
+
+-   *Conclusion*
+
+*You will be marked on the following:*
+
+### a) Your code for readability and functionality
+
+### b) Your figures for communication
+
+### c) Your text communication of your analysis
+
+*Below is a template you can use.*
+
+------------------------------------------------------------------------
+
+### Introduction
+
+```{r Load and Write the Data, warning=FALSE, message=FALSE}
+
+# First, we ensure that the initial data we receive from the Palmer Penguins dataset is preserved before any cleaning, manipulation or analysis in case we need to call the original data back in the future, e.g. for analysis of raw data
+
+# Here, I am writing the raw data into it's own .csv file
+write.csv(penguins_raw,here("dataset","penguins_raw.csv"))
+# Labelling it with a simple to understand name 
+data_raw <- read.csv(here("dataset","penguins_raw.csv"))
+
+# This raw data can be investigated on a basic level before any data manipulation or analysis 
+head(data_raw)
+
+# More importantly, we can investigate the formatting of variable names to decide whether or not these need changing 
+colnames(data_raw)
+
+```
+
+```{r Appropriately Clean the Data, warning=FALSE, message=FALSE}
+# As the column names are convoluted, we should clean the data to make it easier to work with. Here I am using a function included in this project in the "functions" folder, provided by Lydia France of the University of Oxford. I label this new data with the easy name "cleaned_data"
+cleaned_data <- clean_column_names(data_raw)
+
+# As with the raw data, we can save this into its own .csv file and label it with an easy-to-use name
+write.csv(cleaned_data,here("dataset","data_clean.csv"))
+data_clean <- read.csv(here("dataset","data_clean.csv"))
+
+# This can also be investigated on a basic scale in terms of formatting
+head(data_clean)
+colnames(data_clean)
+```
+
+Creating an exploratory figure for checking preliminary trends and patterns
+
+```{r Figure 1: Exploratory Figure, warning=FALSE, message=FALSE}
+
+# A scatter plot can show us how flipper length varies with body mass across the three species in the dataset - for this, I use the ggplot 2 function. I have also created a custom colour palette to ensure my graph is colour-blind friendly
+
+
+length_mass_plot <- ggplot(data_clean,aes(x=body_mass_g,
+                                          y=flipper_length_mm, colour=species))+
+  geom_point()+
+  labs(title=" Figure 1: How does body mass differ with flipper length for three penguin species?",
+       x="Body Mass (g)",
+       y="Flipper Length (mm)",
+       legend="Species")+
+  theme(plot.title=element_text(size=5))+
+  scale_color_manual(values=c("#D81B60", "#1E88E5", "#FFC107"))+ 
+  theme_minimal()
+
+print(length_mass_plot)
+```
+
+```{r Saving the Exploratory Figure, warning=FALSE, message=FALSE}
+#Saving the figure to the "figures subfolder"
+agg_png("figures/length_mass_plot.png",
+        width=5000,
+        height=3000,
+        units="px",
+        res=500)
+print(length_mass_plot)
+dev.off()
+
+```
+
+### Hypothesis
+
+Nulls:
+
+-   No statistically significant correlation between body mass and flipper length
+
+-   Species does not play any interactive role in the above relationship
+
+Alternatives:
+
+-   Body mass and flipper length are correlated significantly
+
+-   Species has an interactive role in this relationship
+
+### Statistical Methods
+
+Use of ANCOVA - justify
+
+Two models for two hypotheses
+
+```{r Running a Statistical Test, warning=FALSE, message=FALSE}
+# Model 1 - Testing for relationship between flipper length and body mass, not controlling for species
+model_a <- lm(flipper_length_mm ~ body_mass_g, data = cleaned_data)
+
+# Model 2 - Testing for relationship between body mass and flipper length, with interaction of species
+model_b <- lm(flipper_length_mm ~ body_mass_g * species, data = cleaned_data)
+
+# Model Summaries
+summary(model_a)
+summary(model_b)
+
+# Performing ANOVA
+anova(model_a, model_b)
+
+# Checking assumptions for both models
+# Extract residuals
+residuals_a <- residuals(model_a)
+residuals_b <- residuals(model_b)
+
+```
+
+```{r Creating Diagnostic Plots to Verify Model Fit, warning=FALSE, message=FALSE}
+
+# Function to create diagnostic plots for a model
+diagnostic_plots <- function(residuals, model_name) {
+  # Residual vs Fitted plot
+  p1 <- ggplot(data = data.frame(residuals, fitted = fitted.values(model_a)), aes(x = fitted, y = residuals)) +
+    geom_point(alpha = 0.7) +
+    geom_hline(yintercept = 0, color = "red", linetype = "dashed") +
+    labs(title = paste("Residuals vs Fitted:", model_name), x = "Fitted Values", y = "Residuals") +
+    theme_minimal()
+  
+  # QQ Plot
+  p2 <- ggplot(data = data.frame(sample = residuals), aes(sample = residuals)) +
+    stat_qq() +
+    stat_qq_line(color = "red") +
+    labs(title = paste("QQ Plot:", model_name)) +
+    theme_minimal()
+  
+  # Histogram of Residuals
+  p3 <- ggplot(data = data.frame(residuals), aes(x = residuals)) +
+    geom_histogram(binwidth = 1, fill = "blue", color = "black", alpha = 0.7) +
+    labs(title = paste("Histogram of Residuals:", model_name), x = "Residuals", y = "Frequency") +
+    theme_minimal()
+  
+  # Combine plots
+  p1 + p2 + p3 + plot_layout(ncol = 1)
+}
+
+# Generate diagnostic plots for model_a
+diag_plots_a <- diagnostic_plots(residuals_a, "Model A")
+
+# Generate diagnostic plots for model_b
+diag_plots_b <- diagnostic_plots(residuals_b, "Model B")
+
+# Display diagnostic plots
+diag_plots_a
+diag_plots_b
+```
+
+```{r Saving Diagnostic Plot A, warning=FALSE, message=FALSE}
+
+# Diagnostic Plot A
+agg_png("figures/diag_plots_a.png",
+        width=5000,
+        height=3000,
+        units="px",
+        res=500)
+print(diag_plots_a)
+dev.off()
+```
+
+```{r Saving Diagnostic Plot B, warning=FALSE, message=FALSE}
+
+# Diagnostic Plot B
+agg_png("figures/diag_plots_b.png",
+        width=5000,
+        height=3000,
+        units="px",
+        res=500)
+print(diag_plots_b)
+dev.off()
+
+```
+
+### Results & Discussion
+
+To visualise our main finding from the statistical analysis, we can plot
+
+```{r Creating a Results Figure, warning=FALSE,message=FALSE}
+
+# Scatter plot with regression lines, faceted by species, and custom colors
+final_plot <- ggplot(cleaned_data, aes(x = body_mass_g, y = flipper_length_mm, color = species)) +
+  geom_point(alpha = 0.7) +                          # Scatter points
+  geom_smooth(method = "lm", se = TRUE) +           # Regression lines with confidence intervals
+  facet_wrap(~ species, strip.position = "top") +   # Facet by species
+  scale_color_manual(values=c("#D81B60", "#1E88E5", "#FFC107"))+
+  labs(
+    title = "Relationship Between Body Mass and Flipper Length",
+    subtitle = "Regression lines for each species show interaction effects",
+    x = "Body Mass (g)",
+    y = "Flipper Length (mm)"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "none",                       # Remove legend (redundant with facets)
+    panel.spacing = unit(2, "lines"),               # Add space between panels
+    panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5), # Border around panels
+    strip.background = element_blank(),            # Clean facet labels
+    strip.text = element_text(size = 8, face = "bold"), # Style facet labels
+    plot.title = element_text(size = 12, face = "bold"),
+    plot.subtitle = element_text(size = 10)
+  )
+
+print(final_plot)
+
+```
+
+```{r Saving the Final Figure, warning=FALSE, message=FALSE}
+
+agg_png("figures/final_plot.png",
+        width=5000,
+        height=3000,
+        units="px",
+        res=500)
+print(final_plot)
+dev.off()
+```
+
+Results Model A:
+
+body mass and flipper length coefficient is 0.0153 with a very small p-value --\> 2e-16 - stats sig relationship between body mass and flipper length; i.e. each gram gained in body mass = 0.0153mm length increase; good model fit --\> R2 = 0.759
+
+Results Model B:
+
+significant interaction term for Chinstrap compared to reference Adelie --\> estimate = 0.0052, p=0.00766 i.e. slope of body mass vs flipper length differs between Chinstrap and Adelie significantly
+
+insignificant interaction term for Gentoo - p=0.08164 compared to Adelie, so no significant difference in slope of body mass v flipper length
+
+Adding species interaction increases model fit from R2 = 0.759 to R2=0.857, significant improvement F=58.025, p=2.2e-16
+
+### Conclusion
+
+------------------------------------------------------------------------
+
+## QUESTION 3: Open Science
+
+### a) GitHub
+
+*Upload your RProject you created for **Question 2** and any files and subfolders used to GitHub. Do not include any identifiers such as your name. Make sure your GitHub repo is public.*
+
+*GitHub link:*
+
+*You will be marked on your repo organisation and readability.*
+
+### b) Share your repo with a partner, download, and try to run their data pipeline.
+
+*Partner's GitHub link:*
+
+*You **must** provide this so I can verify there is no plagiarism between you and your partner.*
+
+### c) Reflect on your experience running their code. (300-500 words)
+
+-   *What elements of your partner's code helped you to understand their data pipeline?*
+
+-   *Did it run? Did you need to fix anything?*
+
+-   *What suggestions would you make for improving their code to make it more understandable or reproducible, and why?*
+
+-   *If you needed to alter your partner's figure using their code, do you think that would be easy or difficult, and why?*
+
+### d) Reflect on your own code based on your experience with your partner's code and their review of yours. (300-500 words)
+
+-   *What improvements did they suggest, and do you agree?*
+
+-   *What did you learn about writing code for other people?*
